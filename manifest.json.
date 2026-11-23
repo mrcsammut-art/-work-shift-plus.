@@ -1,1 +1,13 @@
 
+{
+"name": "Work Shift Plus",
+"short_name": "Shift Plus",
+"description": "A work shift calendar for tracking shifts, days off, overtime, night overtime, vacation leave, sick leave and daily notes. Works offline.",
+"start_url": "./",
+"scope": "./",
+"display": "standalone",
+"orientation": "any",
+"dir": "ltr",
+"background_color": "#ffffff",
+"theme_color": "#0b1220"
+}
