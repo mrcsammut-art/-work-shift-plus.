@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Work Shift Plus</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#0b1220;color:white;
+ font-family:Arial,sans-serif;padding:18px;
+}
+header{text-align:center;padding:15px}
+h1{color:#32d6b0;margin-bottom:5px}
+.panel{
+ background:#172338;padding:16px;
+ border-radius:14px;margin:15px 0;
+}
+select,input,button{
+ padding:12px;border:0;border-radius:8px;
+ font-size:15px;
+}
+select,input{width:100%;background:#263650;color:white;margin:8px 0}
+button{background:#20b99b;color:#07151b;font-weight:bold}
+.controls{display:flex;justify-content:space-between;gap:10px}
+.controls button{flex:1}
+.calendar{
+ display:grid;grid-template-columns:repeat(7,1fr);
+ gap:5px;text-align:center;
+}
+.dayname{color:#9eafc8;font-size:12px;padding:8px 0}
+.day{
+ background:#263650;border-radius:8px;
+ min-height:65px;padding:8px 2px;
+ font-size:13px;cursor:pointer;
+}
+.work{background:#176548}
+.off{background:#244b80}
+.today{outline:2px solid #32d6b0}
+.small{font-size:11px;display:block;margin-top:7px}
+.legend{display:flex;gap:15px;justify-content:center}
+footer{text-align:center;color:#91a0b7;font-size:12px}
+</style>
+</head>
+<body>
+
+<header>
+<h1>WORK SHIFT PLUS</h1>
+Your shifts. Your time. Your life.
+</header>
+
+<div class="panel">
+<h3>Choose your shift</h3>
+<select id="pattern">
+<option value="week">5 Days In / Weekend Off</option>
+<option value="one">1 Day In / 1 Day Out</option>
+<option value="three">3 Days In / 3 Days Out</option>
+</select>
+
+<label>First working day:</label>
+<input type="date" id="start">
+
+<p>Tap any calendar day to change it manually.</p>
+</div>
+
+<div class="panel">
+<div class="controls">
+<button onclick="changeMonth(-1)">Previous</button>
+<button onclick="changeMonth(1)">Next</button>
+</div>
+<h2 id="month" style="text-align:center"></h2>
+<div class="calendar" id="calendar"></div>
+</div>
+
+<div class="panel">
+<div class="legend">
+<span>🟩 WORK</span>
+<span>🟦 OFF</span>
+</div>
+<p id="info" style="text-align:center"></p>
+<button style="width:100%" onclick="resetChanges()">Reset manual changes</button>
+</div>
+
+<footer>Work Shift Plus © 2026</footer>
+
+<script>
+let current=new Date();
+let overrides=JSON.parse(localStorage.getItem("overrides")||"{}");
+
+const pattern=document.getElementById("pattern");
+const start=document.getElementById("start");
+
+function key(d){
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+start.value=localStorage.getItem("start")||key(new Date());
+pattern.value=localStorage.getItem("pattern")||"one";
+
+function status(d){
+ let k=key(d);
+ if(overrides[k])return overrides[k];
+
+ let first=new Date(start.value+"T12:00:00");
+ let diff=Math.round((new Date(d.getFullYear(),d.getMonth(),d.getDate())-new Date(first.getFullYear(),first.getMonth(),first.getDate()))/86400000);
+
+ if(pattern.value==="week"){
+  return d.getDay()===0||d.getDay()===6?"OFF":"WORK";
+ }
+ if(pattern.value==="one"){
+  return ((diff%2+2)%2===0)?"WORK":"OFF";
+ }
+ return ((diff%6+6)%6<3)?"WORK":"OFF";
+}
+
+function render(){
+ let year=current.getFullYear();
+ let month=current.getMonth();
+ document.getElementById("month").textContent=
+ new Date(year,month,1).toLocaleDateString("en",{month:"long",year:"numeric"});
+
+ let cal=document.getElementById("calendar");
+ cal.innerHTML="";
+ ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(n=>{
+  let e=document.createElement("div");
+  e.className="dayname";e.textContent=n;cal.appendChild(e);
+ });
+
+ let first=new Date(year,month,1).getDay();
+ for(let i=0;i<first;i++)cal.appendChild(document.createElement("div"));
+
+ let total=new Date(year,month+1,0).getDate();
+ for(let n=1;n<=total;n++){
+  let d=new Date(year,month,n);
+  let s=status(d);
+  let e=document.createElement("div");
+  e.className="day "+(s==="WORK"?"work":"off");
+  if(key(d)===key(new Date()))e.classList.add("today");
+  e.innerHTML=n+'<span class="small">'+s+'</span>';
+  e.onclick=()=>{
+   overrides[key(d)]=s==="WORK"?"OFF":"WORK";
+   localStorage.setItem("overrides",JSON.stringify(overrides));
+   render();
+  };
+  cal.appendChild(e);
+ }
+ document.getElementById("info").textContent=
+ "Tap a day to change WORK / OFF";
+}
+
+function changeMonth(amount){
+ current.setMonth(current.getMonth()+amount);
+ render();
+}
+
+function resetChanges(){
+ overrides={};
+ localStorage.removeItem("overrides");
+ render();
+}
+
+pattern.onchange=()=>{
+ localStorage.setItem("pattern",pattern.value);
+ render();
+};
+
+start.onchange=()=>{
+ localStorage.setItem("start",start.value);
+ render();
+};
+
+render();
+</script>
+</body>
+</html>
